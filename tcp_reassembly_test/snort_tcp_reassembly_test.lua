@@ -15,7 +15,6 @@ stream =
     udp_cache = { idle_timeout = 180 },
     ip_cache = { idle_timeout = 180 },
     max_flows = 8192,  -- Overall maximum flows
-    -- show_rebuilt_packets is not valid at stream level
 }
 
 stream_tcp = 
@@ -46,7 +45,7 @@ normalizer =
         trim_rst = false,
         trim_win = false,
         trim_mss = false,
-        trim_opts = false,
+        opts = false,  -- Correct option name for TCP options normalization
         block = false,  -- Don't block to see all packets
     }
 }
@@ -74,7 +73,7 @@ unified2 =
 alert_csv = 
 {
     file = true,
-    fields = { timestamp = true, msg = true, src = true, srcport = true, dst = true, dstport = true, proto = true, action = true },
+    fields = "timestamp msg src srcport dst dstport proto action",
 }
 
 -- Enable detailed TCP events
@@ -151,4 +150,5 @@ profiler =
     cpu = { show = true },
     memory = { show = true },
 }
+
 
