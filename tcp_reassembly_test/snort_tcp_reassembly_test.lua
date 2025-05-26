@@ -10,10 +10,12 @@ dofile('snort_defaults.lua')
 -- Stream configuration with detailed TCP tracking
 stream = 
 {
-    tcp_cache = { max_sessions = 8192 },
-    udp_cache = { max_sessions = 1024 },
-    ip_cache = { max_sessions = 1024 },
-    show_rebuilt_packets = true,
+    -- Use idle_timeout instead of max_sessions for cache configurations
+    tcp_cache = { idle_timeout = 180 },
+    udp_cache = { idle_timeout = 180 },
+    ip_cache = { idle_timeout = 180 },
+    max_flows = 8192,  -- Overall maximum flows
+    -- show_rebuilt_packets is not valid at stream level
 }
 
 stream_tcp = 
@@ -22,18 +24,16 @@ stream_tcp =
     session_timeout = 180,
     max_window = 65535,
     track_only = false,
-    log_asymmetric_traffic = true,
-    show_rebuilt_packets = true,
+    show_rebuilt_packets = true,  -- This is valid in stream_tcp
     small_segments = 
     {
         count = 3,
         maximum_size = 20,
     },
-    require_3whs = 0,
+    require_3whs = false,
     queue_limit = { max_bytes = 4194304, max_segments = 3000 },
     overlap_limit = 10,
     max_pdu = 16384,  -- Force PDU-based reassembly
-    reassembly_policy = 'first',  -- Use first policy to highlight the issue
 }
 
 -- Enable TCP normalization
@@ -46,7 +46,7 @@ normalizer =
         trim_rst = false,
         trim_win = false,
         trim_mss = false,
-        trim_tcp_options = false,
+        trim_opts = false,
         block = false,  -- Don't block to see all packets
     }
 }
@@ -61,7 +61,6 @@ http_inspect =
     decompress_pdf = true,
     decompress_swf = true,
     decompress_zip = true,
-    script_detection = true,
 }
 
 -- Configure logging
@@ -75,7 +74,7 @@ unified2 =
 alert_csv = 
 {
     file = true,
-    fields = 'timestamp,msg,src,srcport,dst,dstport,proto,action',
+    fields = { timestamp = true, msg = true, src = true, srcport = true, dst = true, dstport = true, proto = true, action = true },
 }
 
 -- Enable detailed TCP events
@@ -98,51 +97,58 @@ output =
     wide_hex_dump = true,
 }
 
--- Enable packet capture for analysis
-packet_capture = 
+-- File processing configuration
+file_id = 
 {
-    enabled = true,
-    limit = 100,
+    type_depth = 1460,
+    signature_depth = 10485760,
+    trace_type = true,
+    trace_signature = true,
+    trace_stream = true,
 }
 
--- Enable file processing to trigger partial flush
-file_id = 
+-- File policy configuration
+file_policy = 
 {
     enable_type = true,
     enable_signature = true,
     enable_capture = true,
-}
-
--- Enable detailed debug logs
-debug = 
-{
-    file = 'debug.log',
-    level = 255,  -- Maximum debug level
-    loggers = 
+    rules =
     {
-        'stream',
-        'stream_tcp',
-        'tcp_reassembler',
-        'http_inspect',
-        'file_api',
+        {  when = { file_type_id = 288 }, use = { verdict = 'log' } },
     }
 }
 
--- Force packet trace
+-- Enable detailed debug logs
+logger = 
+{
+    level = 'debug',
+}
+
+-- Configure packet trace
+packet_tracer = 
+{
+    enable = true,
+}
+
+-- Configure trace for specific modules
+-- Fixed module names to match actual Snort 3 module names
 trace = 
 {
     modules = 
     {
-        { name = 'stream_tcp', level = 255 },
-        { name = 'tcp_reassembler', level = 255 },
-        { name = 'http_inspect', level = 255 },
+        stream_tcp = { level = 255 },
+        stream_ip = { level = 255 },
+        tcp_reassembly = { level = 255 },
+        http_inspect = { level = 255 },
     }
 }
 
--- Enable profiling to see performance impact
+-- Configure profiler
 profiler = 
 {
-    modules = true,
-    memory = true,
-    cpu = true,
+    rules = { show = true },
+    cpu = { show = true },
+    memory = { show = true },
 }
+
