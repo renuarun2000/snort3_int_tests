@@ -16,7 +16,7 @@ stream_tcp = {
 -- HTTP Inspector
 http_inspect = { }
 
--- File policy configuration
+-- File magic configuration
 file_magic = {
     {
         id = 1,
@@ -27,26 +27,26 @@ file_magic = {
     }
 }
 
-local_file_policy = {
+-- File policy configuration
+file_policy = {
+    enable_type = true,
+    enable_signature = true,
+    enable_capture = true,
+    verdict_delay = 5000, -- 5 second delay to simulate slow file lookup
     rules = {
         {
             when = { file_type_id = 1 }, -- TEST_FILE type
             use = { 
-                verdict = "log",         -- Changed from "block" to "log"
+                verdict = "log",         -- Use "log" verdict instead of "block"
                 enable_file_signature = true
             }
         }
     }
 }
 
-file_policy = local_file_policy
-
+-- File ID configuration
 file_id = {
-    enable_type = true,
-    enable_signature = true,
-    enable_capture = true,
-    verdict_delay = 5000, -- 5 second delay to simulate slow file lookup
-    block_timeout = 10    -- 10 second block timeout
+    rules_file = 'file_magic.rules'  -- Use the built-in file magic rules
 }
 
 -- Wizard for protocol identification
@@ -95,9 +95,9 @@ active = {
 -- Trace options for debugging
 trace = {
     modules = {
-        file_api = { all = 1 },
-        stream_tcp = { all = 1 },
-        active = { all = 1 },
-        packet_io = { all = 1 }
+        file_api = { all = 3 },
+        stream_tcp = { all = 2 },
+        active = { all = 2 },
+        packet_io = { all = 2 }
     }
 }
